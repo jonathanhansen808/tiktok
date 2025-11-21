@@ -1,0 +1,13 @@
+name: Native GitHub Push Notification
+
+on:
+  push:
+    branches:
+      - "*"
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dummy step
+        run: echo "Push detected: ${{ github.ref }}"
