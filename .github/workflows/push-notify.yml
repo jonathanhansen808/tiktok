@@ -1,13 +1,38 @@
-name: Native GitHub Push Notification
+name: Daily Scrape Check
 
 on:
-  push:
-    branches:
-      - "*"
+  schedule:
+    - cron: "0 1 * * *"   # 1:00 AM UTC daily (adjust if needed)
+  workflow_dispatch:       # allow manual run
 
 jobs:
-  trigger:
+  check:
     runs-on: ubuntu-latest
     steps:
-      - name: Dummy step
-        run: echo "Push detected: ${{ github.ref }}"
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Determine today's file
+        id: checkfile
+        run: |
+          TODAY=$(date -u +"%Y-%m-%d")
+          FILE="data/${TODAY}.csv"
+          echo "file=$FILE" >> $GITHUB_OUTPUT
+
+          if [ -f "$FILE" ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send GitHub Notification
+        if: always()
+        run: |
+          STATUS="${{ steps.checkfile.outputs.status }}"
+          FILE="${{ steps.checkfile.outputs.file }}"
+
+          if [ "$STATUS" = "success" ]; then
+            echo "::notice title=TikTok Scrape - SUCCESS::File found: $FILE"
+          else
+            echo "::warning title=TikTok Scrape - FAILURE::File NOT found for today"
+          fi
